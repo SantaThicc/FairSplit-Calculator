@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AA分摊计算器</title>
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+        .person-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .person-row input {
+            margin-right: 10px;
+            text-align: left;
+        }
+        .person-row button {
+            margin-left: 10px;
+        }
+        .labels {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .labels div {
+            margin-right: 10px;
+            font-weight: bold;
+            text-align: left;
+        }
+        .labels div:nth-child(1) {
+            width: 80px;
+        }
+        .labels div:nth-child(2) {
+            width: 120px;
+        }
+        .person-row input[name="person-name"] {
+            width: 80px;
+        }
+        .person-row input[name="person-amount"] {
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AA分摊计算器</h1>
+        <div class="labels">
+            <div>名字</div>
+            <div>钱数</div>
+        </div>
+        <div id="person-container"></div>
+        <button onclick="addPerson()">+</button>
+        <br><br>
+        <button onclick="calculate()">计算</button>
+        <h2>结果</h2>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let personCount = 0;
+
+        function addPerson() {
+            personCount++;
+            const personContainer = document.getElementById('person-container');
+            const personRow = document.createElement('div');
+            personRow.className = 'person-row';
+            personRow.innerHTML = `
+                <input type="text" name="person-name" placeholder="名字${generateName(personCount)}">
+                <input type="number" name="person-amount" placeholder="0.00" step="0.01" min="0">
+                <button onclick="removePerson(this)">移除</button>
+            `;
+            personContainer.appendChild(personRow);
+        }
+
+        function removePerson(button) {
+            button.parentElement.remove();
+        }
+
+        function generateName(index) {
+            let name = '';
+            while (index > 0) {
+                let mod = (index - 1) % 26;
+                name = String.fromCharCode(65 + mod) + name;
+                index = Math.floor((index - mod) / 26);
+            }
+            return name;
+        }
+
+        function calculate() {
+            const personContainer = document.getElementById('person-container');
+            const personRows = personContainer.getElementsByClassName('person-row');
+            let totalAmount = 0;
+            const people = [];
+
+            for (let i = 0; i < personRows.length; i++) {
+                const row = personRows[i];
+                let nameInput = row.querySelector('input[name="person-name"]');
+                let amountInput = row.querySelector('input[name="person-amount"]');
+                
+                let name = nameInput.value.trim() || generateName(i + 1);
+                let amount = parseFloat(amountInput.value) || 0;
+                
+                totalAmount += amount;
+                people.push({ name, amount });
+            }
+
+            const averageAmount = totalAmount / people.length;
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<p>总金额: ${totalAmount.toFixed(2)}</p><p>平均金额: ${averageAmount.toFixed(2)}</p>`;
+            const balance = people.map(person => {
+                return { name: person.name, balance: person.amount - averageAmount };
+            });
+
+            balance.sort((a, b) => a.balance - b.balance);
+
+            let i = 0, j = balance.length - 1;
+            while (i < j) {
+                const debtor = balance[i];
+                const creditor = balance[j];
+                const settlementAmount = Math.min(-debtor.balance, creditor.balance);
+                
+                if (settlementAmount > 0) {
+                    resultDiv.innerHTML += `<p>${debtor.name} 应该支付 ${settlementAmount.toFixed(2)} 给 ${creditor.name}</p>`;
+                    debtor.balance += settlementAmount;
+                    creditor.balance -= settlementAmount;
+                }
+                
+                if (debtor.balance === 0) i++;
+                if (creditor.balance === 0) j--;
+            }
+        }
+
+        addPerson(); // 初始化一个人
+    </script>
+</body>
+</html>
