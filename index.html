@@ -239,37 +239,37 @@
                 });
             }
 
-            return { totalAmount, people };
+            return { totalAmount, people, allOneToOne };
         }
 
         function calculateAll() {
             const pagesContainer = document.getElementById('pages');
             const pages = pagesContainer.getElementsByClassName('page');
-            let totalAmount = 0;
             const allPeople = new Map();
 
             // Execute calculatePage for each page
             for (let page of pages) {
                 const result = calculatePage(page.querySelector('button[onclick="calculatePage(this)"]'));
 
-                totalAmount += result.totalAmount;
                 result.people.forEach(person => {
                     if (!allPeople.has(person.name)) {
-                        allPeople.set(person.name, { amount: 0, percentage: 0 });
+                        allPeople.set(person.name, { amount: 0, shouldPay: 0 });
                     }
                     allPeople.get(person.name).amount += person.amount;
-                    allPeople.get(person.name).percentage += person.percentage;
+                });
+
+                const averageAmount = result.totalAmount / result.people.reduce((sum, person) => sum + person.percentage, 0);
+                result.people.forEach(person => {
+                    const shouldPay = averageAmount * person.percentage;
+                    allPeople.get(person.name).shouldPay += shouldPay;
                 });
             }
 
-            const averageAmount = totalAmount / Array.from(allPeople.values()).reduce((acc, person) => acc + person.percentage, 0);
-            
             const resultDiv = document.getElementById('final-result');
-            resultDiv.innerHTML = `<p>Total Amount: ${totalAmount.toFixed(2)}</p>`;
+            resultDiv.innerHTML = `<p>Total Amount: ${Array.from(allPeople.values()).reduce((sum, person) => sum + person.amount, 0).toFixed(2)}</p>`;
 
             const balance = Array.from(allPeople.entries()).map(([name, person]) => {
-                const shouldPay = averageAmount * person.percentage;
-                return { name, balance: person.amount - shouldPay };
+                return { name, balance: person.amount - person.shouldPay };
             });
 
             balance.sort((a, b) => a.balance - b.balance);
