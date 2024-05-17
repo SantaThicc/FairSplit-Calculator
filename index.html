@@ -6,7 +6,7 @@
     <title>FairSplit Calculator</title>
     <style>
         .container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             border: 1px solid #ccc;
@@ -41,40 +41,96 @@
         .labels div:nth-child(2) {
             width: 120px;
         }
+        .labels div:nth-child(3) {
+            width: 80px;
+        }
         .person-row input[name="person-name"] {
             width: 80px;
         }
         .person-row input[name="person-amount"] {
             width: 120px;
         }
+        .person-row input[name="person-percentage"] {
+            width: 80px;
+        }
+        .page-container {
+            margin-bottom: 20px;
+        }
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-header input {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-right: 10px;
+            text-align: left;
+        }
+        .page {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>FairSplit Calculator</h1>
-        <div class="labels">
-            <div>Name</div>
-            <div>Amount</div>
-        </div>
-        <div id="person-container"></div>
-        <button onclick="addPerson()">+</button>
+        <div id="pages"></div>
+        <button onclick="addPage()">Add Activity</button>
+        <button onclick="calculateAll()">Calculate All</button>
         <br><br>
-        <button onclick="calculate()">Calculate</button>
-        <h2>Result</h2>
-        <div id="result"></div>
+        <div id="final-result"></div>
     </div>
 
     <script>
-        let personCount = 0;
+        let pageCount = 0;
 
-        function addPerson() {
-            personCount++;
-            const personContainer = document.getElementById('person-container');
+        function addPage() {
+            pageCount++;
+            const pagesContainer = document.getElementById('pages');
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'page';
+            pageDiv.innerHTML = `
+                <div class="page-header">
+                    <input type="text" value="Activity ${pageCount}" onchange="updatePageTitle(this)">
+                    <button onclick="addPerson(this)">+</button>
+                </div>
+                <div class="labels">
+                    <div>Name</div>
+                    <div>Amount</div>
+                    <div>Percentage</div>
+                </div>
+                <div class="person-container"></div>
+                <br>
+                <div class="page-result"></div>
+                <button onclick="calculatePage(this)">Calculate Current Activity</button>
+                <button onclick="removePage(this)">Remove Page</button>
+                <button onclick="copyNamesFromPreviousPage(this)">Copy Names from Previous Activity</button>
+            `;
+            pagesContainer.appendChild(pageDiv);
+
+            // Copy names from previous page if not the first page
+            if (pageCount > 1) {
+                copyNamesFromPreviousPage(pageDiv);
+            }
+        }
+
+        function updatePageTitle(input) {
+            const pageHeader = input.parentElement;
+            pageHeader.querySelector('input').value = input.value;
+        }
+
+        function addPerson(button) {
+            const personContainer = button.closest('.page').querySelector('.person-container');
             const personRow = document.createElement('div');
             personRow.className = 'person-row';
             personRow.innerHTML = `
-                <input type="text" name="person-name" placeholder="Name ${generateName(personCount)}">
+                <input type="text" name="person-name" placeholder="Name ${generateName(personContainer.children.length + 1)}">
                 <input type="number" name="person-amount" placeholder="0.00" step="0.01" min="0">
+                <input type="text" name="person-percentage" placeholder="1/1">
                 <button onclick="removePerson(this)">Remove</button>
             `;
             personContainer.appendChild(personRow);
@@ -94,30 +150,117 @@
             return name;
         }
 
-        function calculate() {
-            const personContainer = document.getElementById('person-container');
+        function parseFraction(fraction) {
+            const parts = fraction.split('/');
+            if (parts.length === 2) {
+                return parseFloat(parts[0]) / parseFloat(parts[1]);
+            } else {
+                return parseFloat(fraction);
+            }
+        }
+
+        function copyNamesFromPreviousPage(button) {
+            const currentPage = button.closest('.page');
+            const currentPersonContainer = currentPage.querySelector('.person-container');
+            const previousPage = currentPage.previousElementSibling;
+            const previousPersonContainer = previousPage.querySelector('.person-container');
+            const previousNames = new Set();
+
+            for (let personRow of previousPersonContainer.children) {
+                const nameInput = personRow.querySelector('input[name="person-name"]');
+                const name = nameInput.value.trim() || nameInput.placeholder.split(' ')[1];
+                if (name && !previousNames.has(name)) {
+                    previousNames.add(name);
+                    const personRowClone = personRow.cloneNode(true);
+                    personRowClone.querySelector('input[name="person-amount"]').value = '';
+                    personRowClone.querySelector('input[name="person-percentage"]').value = '1/1';
+                    currentPersonContainer.appendChild(personRowClone);
+                }
+            }
+        }
+
+        function removePage(button) {
+            button.closest('.page').remove();
+        }
+
+        function calculatePage(button) {
+            const page = button.closest('.page');
+            const personContainer = page.querySelector('.person-container');
             const personRows = personContainer.getElementsByClassName('person-row');
             let totalAmount = 0;
+            let totalPercentage = 0;
             const people = [];
+            let allOneToOne = true;
 
-            for (let i = 0; i < personRows.length; i++) {
-                const row = personRows[i];
+            for (let row of personRows) {
                 let nameInput = row.querySelector('input[name="person-name"]');
                 let amountInput = row.querySelector('input[name="person-amount"]');
+                let percentageInput = row.querySelector('input[name="person-percentage"]');
                 
-                let name = nameInput.value.trim() || generateName(i + 1);
+                let name = nameInput.value.trim() || nameInput.placeholder.split(' ')[1];
                 let amount = parseFloat(amountInput.value) || 0;
+                let percentage = parseFraction(percentageInput.value.trim() || "1/1");
                 
                 totalAmount += amount;
-                people.push({ name, amount });
+                totalPercentage += percentage;
+                people.push({ name, amount, percentage });
+                if (percentage !== 1) {
+                    allOneToOne = false;
+                }
             }
 
-            const averageAmount = totalAmount / people.length;
+            const averageAmount = totalAmount / totalPercentage;
 
-            const resultDiv = document.getElementById('result');
+            const pageResultDiv = page.querySelector('.page-result');
+            if (allOneToOne) {
+                pageResultDiv.innerHTML = `<p>Total Amount: ${totalAmount.toFixed(2)}</p><p>Average Amount: ${averageAmount.toFixed(2)}</p>`;
+            } else {
+                pageResultDiv.innerHTML = `<p>Total Amount: ${totalAmount.toFixed(2)}</p>`;
+                people.forEach(person => {
+                    const shouldPay = averageAmount * person.percentage;
+                    pageResultDiv.innerHTML += `<p>${person.name} should pay ${shouldPay.toFixed(2)}</p>`;
+                });
+            }
+        }
+
+        function calculateAll() {
+            const pagesContainer = document.getElementById('pages');
+            const pages = pagesContainer.getElementsByClassName('page');
+            let totalAmount = 0;
+            let totalPercentage = 0;
+            const allPeople = new Map();
+
+            for (let page of pages) {
+                const personContainer = page.querySelector('.person-container');
+                const personRows = personContainer.getElementsByClassName('person-row');
+
+                for (let row of personRows) {
+                    let nameInput = row.querySelector('input[name="person-name"]');
+                    let amountInput = row.querySelector('input[name="person-amount"]');
+                    let percentageInput = row.querySelector('input[name="person-percentage"]');
+                    
+                    let name = nameInput.value.trim() || nameInput.placeholder.split(' ')[1];
+                    let amount = parseFloat(amountInput.value) || 0;
+                    let percentage = parseFraction(percentageInput.value.trim() || "1/1");
+                    
+                    if (!allPeople.has(name)) {
+                        allPeople.set(name, { amount: 0, percentage: 0 });
+                    }
+                    allPeople.get(name).amount += amount;
+                    allPeople.get(name).percentage += percentage;
+
+                    totalAmount += amount;
+                    totalPercentage += percentage;
+                }
+            }
+
+            const averageAmount = totalAmount / totalPercentage;
+
+            const resultDiv = document.getElementById('final-result');
             resultDiv.innerHTML = `<p>Total Amount: ${totalAmount.toFixed(2)}</p><p>Average Amount: ${averageAmount.toFixed(2)}</p>`;
-            const balance = people.map(person => {
-                return { name: person.name, balance: person.amount - averageAmount };
+            const balance = Array.from(allPeople.entries()).map(([name, person]) => {
+                const shouldPay = averageAmount * person.percentage;
+                return { name, balance: person.amount - shouldPay };
             });
 
             balance.sort((a, b) => a.balance - b.balance);
@@ -139,7 +282,7 @@
             }
         }
 
-        addPerson(); // Initialize one person
+        addPage(); // Initialize first page
     </script>
 </body>
 </html>
