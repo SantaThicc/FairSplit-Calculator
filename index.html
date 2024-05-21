@@ -5,89 +5,160 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FairSplit Calculator</title>
     <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f5f7;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
         .container {
-            max-width: 800px;
-            margin: 0 auto;
+            max-width: 900px;
+            margin: 20px auto;
             padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            background-color: #f9f9f9;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        .person-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
         }
-        .person-row input {
-            margin-right: 10px;
-            text-align: left;
-            flex: 1 1 100px;
+
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
         }
-        .person-row button {
-            margin-left: 10px;
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background-color 0.3s;
         }
-        .labels {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
+
+        button:hover {
+            background-color: #0056b3;
         }
-        .labels div {
-            margin-right: 10px;
-            font-weight: bold;
-            text-align: left;
-            flex: 1 1 100px;
-        }
-        .person-row input[name="person-name"] {
-            flex: 1 1 100px;
-        }
-        .person-row input[name="person-amount"] {
-            flex: 1 1 100px;
-        }
-        .person-row input[name="person-percentage"] {
-            flex: 1 1 100px;
-        }
-        .page-container {
+
+        .page {
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 20px;
             margin-bottom: 20px;
+            background-color: #fafbfc;
         }
+
         .page-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
+            margin-bottom: 10px;
         }
+
         .page-header input {
             font-weight: bold;
             font-size: 1.2em;
+            flex: 1 1 auto;
             margin-right: 10px;
-            text-align: left;
-            flex: 1 1 200px;
-        }
-        .page {
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
         }
 
-        /* Responsive design for smaller screens */
-        @media (max-width: 600px) {
+        .labels, .person-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: nowrap;
+        }
+
+        .labels div, .person-row input {
+            flex: 1 1 auto; /* 自动宽度以匹配input */
+            margin-right: 5px; /* 设置右边距，调整间距 */
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .labels div {
+            font-weight: bold;
+        }
+
+        .person-row input {
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            padding: 10px;
+            width: calc(33.333% - 10px); /* 设置每个输入框占33.333%的宽度，留出间距 */
+        }
+
+        .person-row button {
+            margin-left: 5px;
+            padding: 10px;
+            width: calc(33.333% - 10px); /* 设置按钮宽度 */
+        }
+
+        .labels div:last-child, .person-row input:last-child {
+            margin-right: 0; /* 最后一个元素右边距为0，避免超出容器宽度 */
+        }
+
+        .page-result {
+            margin-top: 20px;
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        #final-result {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 20px;
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 500px) {
             .container {
                 padding: 10px;
             }
-            .page-header, .person-row, .labels {
-                flex-direction: column;
-                align-items: flex-start;
+
+            h1 {
+                font-size: 1.5em;
             }
+
+            button {
+                font-size: 14px;
+                padding: 8px 15px;
+                margin: 5px 0;
+            }
+
+            .page-header, .person-row, .labels {
+                flex-direction: row;
+                flex-wrap: nowrap;
+            }
+
             .page-header input, .person-row input, .labels div {
                 flex: 1 1 100%;
-                margin-right: 0;
-                margin-bottom: 10px;
+                margin-bottom: 5px;
+                width: 100%;
             }
-            .person-row button {
-                margin-left: 0;
-                margin-bottom: 10px;
+
+            .labels div {
+                flex: 1 1 auto; /* 自动宽度以匹配input */
+                margin-right: 5px; /* 设置右边距，调整间距 */
+            }
+
+            .labels div:last-child {
+                margin-right: 0; /* 最后一个元素右边距为0，避免超出容器宽度 */
             }
         }
     </style>
@@ -96,9 +167,10 @@
     <div class="container">
         <h1>FairSplit Calculator</h1>
         <div id="pages"></div>
-        <button onclick="addPage()">Add Activity</button>
-        <button onclick="calculateAll()">Calculate All</button>
-        <br><br>
+        <div class="button-container">
+            <button onclick="addPage()">Add Activity</button>
+            <button onclick="calculateAll()">Calculate All</button>
+        </div>
         <div id="final-result"></div>
     </div>
 
@@ -119,17 +191,19 @@
                     <div>Name</div>
                     <div>Amount</div>
                     <div>Percentage</div>
+					<div> </div>
                 </div>
                 <div class="person-container"></div>
                 <br>
                 <div class="page-result"></div>
-                <button onclick="calculatePage(this)">Calculate Current Activity</button>
-                <button onclick="removePage(this)">Remove Page</button>
-                <button onclick="copyNamesFromPreviousPage(this)">Copy Names from Previous Activity</button>
+                <div class="button-container">
+                    <button onclick="calculatePage(this)">Calculate Current Activity</button>
+                    <button onclick="removePage(this)">Remove Page</button>
+                    <button onclick="copyNamesFromPreviousPage(this)">Copy Names from Previous Activity</button>
+                </div>
             `;
             pagesContainer.appendChild(pageDiv);
 
-            // Copy names from previous page if not the first page
             if (pageCount > 1) {
                 copyNamesFromPreviousPage(pageDiv);
             }
@@ -247,7 +321,6 @@
             const pages = pagesContainer.getElementsByClassName('page');
             const allPeople = new Map();
 
-            // Execute calculatePage for each page
             for (let page of pages) {
                 const result = calculatePage(page.querySelector('button[onclick="calculatePage(this)"]'));
 
@@ -291,7 +364,7 @@
             }
         }
 
-        addPage(); // Initialize first page
+        addPage();
     </script>
 </body>
 </html>
